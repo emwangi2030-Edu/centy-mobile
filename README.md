@@ -41,9 +41,24 @@ git branch -M main
 git push -u origin main
 ```
 
+## Phase 1 (done)
+
+- **Config:** `EXPO_PUBLIC_PAYHUB_BASE_URL` in `.env`
+- **HTTP:** `src/lib/payhubFetch.ts` — timeout + abort, Bearer session, `X-Centy-Client: mobile`
+- **Auth:** email/password + 2FA verify; token in **SecureStore**
+- **Smoke test:** Home screen loads `GET /api/hr/v1/capabilities` after login
+
+## Pay Hub (backend) requirement
+
+Deploy Pay Hub with **Centy Mobile** auth support:
+
+1. **`X-Centy-Client: mobile`** on `POST /api/auth/login` and `POST /api/auth/2fa/verify` — JSON includes **`sessionToken`** (same value as the httpOnly `session_token` cookie on web).
+2. **`Authorization: Bearer <sessionToken>`** accepted anywhere `requireAuth` runs (same as cookie).
+
+This repo’s companion changes live under `B2B-Pay-Hub-dev` (`getSessionTokenFromRequest`, login/verify2fa/logout/refreshSession).
+
 ## Next steps
 
-- [ ] Wire auth (session cookies or bearer tokens against Pay Hub)
-- [ ] Add `hrFetch`-style client + `GET /api/hr/v1/capabilities` for tab gating
+- [ ] Tab navigation + hide tabs from capabilities (parity with `employee-workspace`)
 - [ ] Attendance screen + BFF contract for GPS check-in/out
 - [ ] EAS project (`eas build`) and store listings
