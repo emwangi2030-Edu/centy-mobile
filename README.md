@@ -63,8 +63,14 @@ This repo’s companion changes live under `B2B-Pay-Hub-dev` (`getSessionTokenFr
 - **Attendance:** GPS fix (accuracy gate) + `POST /api/hr/v1/attendance/clock-in` / `clock-out` with `location` in JSON; active shift persisted in AsyncStorage (`centyhr_active_clock_in`, same key as web).
 - **BFF:** When `location` is sent, Centy HR BFF attempts a soft `Employee Checkin` row (fails quietly if the ERP doctype differs).
 
+## Phase 3 (done)
+
+- **Payslips:** `GET /api/hr/v1/payroll/salary-slips` (period presets), slip detail, **Share PDF** via `expo-print` + `expo-sharing` (summary HTML — not ERP print format).
+- **Leave:** `GET /api/hr/v1/leave-balances` and `GET /api/hr/v1/leave-applications` (pull-to-refresh).
+- **BFF:** Employees (non–HR bridge) can list/view **their own** salary slips (`CentyHR/bff` payroll routes).
+
 ## Next steps
 
-- [ ] Payslips list + PDF (parity with employee workspace)
+- [ ] Leave apply + submit (POST flows like `leave-hub`)
 - [ ] Attendance screen + BFF contract for GPS check-in/out
 - [ ] EAS project (`eas build`) and store listings

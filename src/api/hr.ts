@@ -69,3 +69,80 @@ export async function postClockOut(payload: {
     body: JSON.stringify(body),
   });
 }
+
+const HR_LIST_TIMEOUT: PayhubFetchOptions = { timeoutMs: 60_000 };
+
+export type SalarySlipRow = {
+  name?: string;
+  employee?: string;
+  employee_name?: string;
+  posting_date?: string;
+  start_date?: string;
+  end_date?: string;
+  currency?: string;
+  status?: string;
+  docstatus?: number;
+};
+
+/** Self-service: omit `employee` (BFF uses linked Employee). HR mobile may pass `employee`. */
+export async function fetchSalarySlips(
+  fromDate: string,
+  toDate: string,
+  employee?: string | null
+): Promise<{ data: SalarySlipRow[] }> {
+  const p = new URLSearchParams({ from_date: fromDate, to_date: toDate });
+  if (employee?.trim()) p.set("employee", employee.trim());
+  return payhubFetchJson<{ data: SalarySlipRow[] }>(
+    `/api/hr/v1/payroll/salary-slips?${p}`,
+    HR_LIST_TIMEOUT
+  );
+}
+
+export async function fetchSalarySlipDetail(
+  slipName: string
+): Promise<{ data: Record<string, unknown> }> {
+  const enc = encodeURIComponent(slipName);
+  return payhubFetchJson<{ data: Record<string, unknown> }>(
+    `/api/hr/v1/payroll/salary-slips/${enc}`,
+    HR_LIST_TIMEOUT
+  );
+}
+
+export type LeaveBalanceRow = {
+  name: string;
+  leave_type?: string;
+  from_date?: string;
+  to_date?: string;
+  new_leaves_allocated?: number;
+  total_leaves_allocated?: number;
+  carry_forward?: number;
+  docstatus?: number;
+};
+
+export async function fetchLeaveBalances(): Promise<{ data: LeaveBalanceRow[] }> {
+  return payhubFetchJson<{ data: LeaveBalanceRow[] }>("/api/hr/v1/leave-balances", HR_LIST_TIMEOUT);
+}
+
+export type LeaveApplicationRow = {
+  name?: string;
+  leave_type?: string;
+  from_date?: string;
+  to_date?: string;
+  total_leave_days?: number;
+  status?: string;
+  employee_name?: string;
+  description?: string;
+};
+
+export async function fetchLeaveApplications(
+  page = 1,
+  pageSize = 25,
+  status: string | "all" = "all"
+): Promise<{
+  data: LeaveApplicationRow[];
+  meta?: { page: number; page_size: number; has_more: boolean };
+}> {
+  const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (status !== "all") q.set("status", status);
+  return payhubFetchJson(`/api/hr/v1/leave-applications?${q}`, HR_LIST_TIMEOUT);
+}
