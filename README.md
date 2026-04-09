@@ -57,8 +57,14 @@ Deploy Pay Hub with **Centy Mobile** auth support:
 
 This repo’s companion changes live under `B2B-Pay-Hub-dev` (`getSessionTokenFromRequest`, login/verify2fa/logout/refreshSession).
 
+## Phase 2 (done)
+
+- **Tabs:** Home, Payslips, Leave, Clock (Attendance), More — visibility from `GET /api/hr/v1/capabilities` (same flags as web).
+- **Attendance:** GPS fix (accuracy gate) + `POST /api/hr/v1/attendance/clock-in` / `clock-out` with `location` in JSON; active shift persisted in AsyncStorage (`centyhr_active_clock_in`, same key as web).
+- **BFF:** When `location` is sent, Centy HR BFF attempts a soft `Employee Checkin` row (fails quietly if the ERP doctype differs).
+
 ## Next steps
 
-- [ ] Tab navigation + hide tabs from capabilities (parity with `employee-workspace`)
+- [ ] Payslips list + PDF (parity with employee workspace)
 - [ ] Attendance screen + BFF contract for GPS check-in/out
 - [ ] EAS project (`eas build`) and store listings

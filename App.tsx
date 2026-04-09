@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import HomeScreen from "./src/screens/HomeScreen";
+import MainApp from "./src/navigation/MainApp";
 import LoginScreen from "./src/screens/LoginScreen";
 
 const Stack = createNativeStackNavigator();
@@ -23,11 +23,15 @@ function RootNavigator() {
   const authed = user !== null;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: true, headerTitle: "Centy" }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {authed ? (
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerTitle: "Centy" }} />
+        <Stack.Screen name="Main" component={MainApp} />
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerTitle: "Sign in" }} />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: true, title: "Sign in" }}
+        />
       )}
     </Stack.Navigator>
   );

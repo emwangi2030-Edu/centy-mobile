@@ -59,7 +59,7 @@ export default function LoginScreen() {
     >
       <View style={styles.container}>
         <Text style={styles.logo}>Centy</Text>
-        <Text style={styles.sub}>Employee sign in</Text>
+        <Text style={styles.sub}>Employee self-service</Text>
 
         {twoFactor ? (
           <>
