@@ -15,6 +15,10 @@ export type MeResponse = {
   business: AuthBusiness;
   requiresProfileCompletion?: boolean;
   canSubmitOnBehalf?: boolean;
+  isImpersonating?: boolean;
+  isImpersonatingUser?: boolean;
+  impersonatedUserName?: string;
+  impersonatedUserRole?: string;
 };
 
 export type Login2FAPayload = {

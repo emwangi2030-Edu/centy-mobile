@@ -9,8 +9,9 @@ import React, {
 } from "react";
 import { getMe, postLogin, postLogout, postVerify2fa } from "../api/auth";
 import { getStoredSessionToken, clearStoredSessionToken } from "../lib/authStorage";
+import { clearStoredAppMode } from "../lib/appModeStorage";
 import { PayHubApiError } from "../lib/payhubFetch";
-import type { AuthBusiness, AuthUser } from "../types/auth";
+import type { AuthBusiness, AuthUser, MeResponse } from "../types/auth";
 
 type TwoFactorChallenge = { tempToken: string; method: "totp" | "email_otp" };
 
@@ -18,6 +19,11 @@ type AuthContextValue = {
   ready: boolean;
   user: AuthUser | null;
   business: AuthBusiness;
+  canSubmitOnBehalf: boolean;
+  isImpersonating: boolean;
+  isImpersonatingUser: boolean;
+  impersonatedUserName: string | null;
+  impersonatedUserRole: string | null;
   twoFactor: TwoFactorChallenge | null;
   error: string | null;
   clearError: () => void;
@@ -34,16 +40,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [business, setBusiness] = useState<AuthBusiness>(null);
+  const [canSubmitOnBehalf, setCanSubmitOnBehalf] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [isImpersonatingUser, setIsImpersonatingUser] = useState(false);
+  const [impersonatedUserName, setImpersonatedUserName] = useState<string | null>(null);
+  const [impersonatedUserRole, setImpersonatedUserRole] = useState<string | null>(null);
   const [twoFactor, setTwoFactor] = useState<TwoFactorChallenge | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
-  const refreshMe = useCallback(async () => {
-    const me = await getMe();
+  const applyMe = useCallback((me: MeResponse) => {
     setUser(me.user);
     setBusiness(me.business ?? null);
+    setCanSubmitOnBehalf(!!me.canSubmitOnBehalf);
+    setIsImpersonating(!!me.isImpersonating);
+    setIsImpersonatingUser(!!me.isImpersonatingUser);
+    setImpersonatedUserName(
+      typeof me.impersonatedUserName === "string" && me.impersonatedUserName.trim()
+        ? me.impersonatedUserName.trim()
+        : null
+    );
+    setImpersonatedUserRole(
+      typeof me.impersonatedUserRole === "string" && me.impersonatedUserRole.trim()
+        ? me.impersonatedUserRole.trim()
+        : null
+    );
   }, []);
+
+  const refreshMe = useCallback(async () => {
+    const me = await getMe();
+    applyMe(me);
+  }, [applyMe]);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,8 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const me = await getMe();
             if (cancelled) return;
-            setUser(me.user);
-            setBusiness(me.business ?? null);
+            applyMe(me);
           } catch {
             if (!cancelled) await clearStoredSessionToken();
           }
@@ -68,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyMe]);
 
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
@@ -114,8 +141,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setTwoFactor(null);
     await postLogout();
+    await clearStoredAppMode();
     setUser(null);
     setBusiness(null);
+    setCanSubmitOnBehalf(false);
+    setIsImpersonating(false);
+    setIsImpersonatingUser(false);
+    setImpersonatedUserName(null);
+    setImpersonatedUserRole(null);
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -123,6 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ready,
       user,
       business,
+      canSubmitOnBehalf,
+      isImpersonating,
+      isImpersonatingUser,
+      impersonatedUserName,
+      impersonatedUserRole,
       twoFactor,
       error,
       clearError,
@@ -132,7 +170,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshMe,
     }),
-    [ready, user, business, twoFactor, error, clearError, login, verify2FA, cancel2FA, logout, refreshMe]
+    [
+      ready,
+      user,
+      business,
+      canSubmitOnBehalf,
+      isImpersonating,
+      isImpersonatingUser,
+      impersonatedUserName,
+      impersonatedUserRole,
+      twoFactor,
+      error,
+      clearError,
+      login,
+      verify2FA,
+      cancel2FA,
+      logout,
+      refreshMe,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

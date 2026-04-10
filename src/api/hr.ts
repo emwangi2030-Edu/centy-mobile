@@ -125,6 +125,7 @@ export async function fetchLeaveBalances(): Promise<{ data: LeaveBalanceRow[] }>
 
 export type LeaveApplicationRow = {
   name?: string;
+  employee?: string;
   leave_type?: string;
   from_date?: string;
   to_date?: string;
@@ -145,4 +146,102 @@ export async function fetchLeaveApplications(
   const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   if (status !== "all") q.set("status", status);
   return payhubFetchJson(`/api/hr/v1/leave-applications?${q}`, HR_LIST_TIMEOUT);
+}
+
+export async function postLeaveApplicationApprove(leaveId: string): Promise<void> {
+  const enc = encodeURIComponent(leaveId);
+  await payhubFetchJson<{ ok?: boolean }>(`/api/hr/v1/leave-applications/${enc}/approve`, {
+    method: "POST",
+    ...HR_LIST_TIMEOUT,
+  });
+}
+
+export async function postLeaveApplicationReject(leaveId: string, reason: string): Promise<void> {
+  const enc = encodeURIComponent(leaveId);
+  await payhubFetchJson<{ ok?: boolean }>(`/api/hr/v1/leave-applications/${enc}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason: reason.trim() }),
+    ...HR_LIST_TIMEOUT,
+  });
+}
+
+export type ExpenseClaimRow = {
+  name?: string;
+  employee?: string;
+  employee_name?: string;
+  posting_date?: string;
+  approval_status?: string;
+  expense_approver?: string;
+  docstatus?: number;
+  grand_total?: number | string | null;
+  total_claimed_amount?: number | string | null;
+  total_amount_reimbursed?: number | string | null;
+};
+
+export async function fetchExpensesPendingApproval(
+  page = 1,
+  pageSize = 40
+): Promise<{
+  data: ExpenseClaimRow[];
+  meta?: { page: number; page_size: number; has_more: boolean };
+}> {
+  const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  return payhubFetchJson(`/api/hr/v1/expenses/pending-approval?${q}`, HR_LIST_TIMEOUT);
+}
+
+export async function fetchExpensesReadyToPay(
+  page = 1,
+  pageSize = 40
+): Promise<{
+  data: ExpenseClaimRow[];
+  meta?: { page: number; page_size: number; has_more: boolean };
+}> {
+  const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  return payhubFetchJson(`/api/hr/v1/expenses/ready-to-pay?${q}`, HR_LIST_TIMEOUT);
+}
+
+export async function postExpenseClaimApprove(claimId: string): Promise<void> {
+  const enc = encodeURIComponent(claimId);
+  await payhubFetchJson<{ ok?: boolean }>(`/api/hr/v1/expenses/${enc}/approve`, {
+    method: "POST",
+    ...HR_LIST_TIMEOUT,
+  });
+}
+
+export async function postExpenseClaimReject(claimId: string, reason: string): Promise<void> {
+  const enc = encodeURIComponent(claimId);
+  await payhubFetchJson<{ ok?: boolean }>(`/api/hr/v1/expenses/${enc}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason: reason.trim() }),
+    ...HR_LIST_TIMEOUT,
+  });
+}
+
+export type MarkExpensePaidPayload = {
+  paid_at?: string;
+  payment_ref?: string;
+  payment_account?: string;
+  /** Default on BFF is `wallet`. */
+  payment_mode?: "wallet" | "offline";
+};
+
+export async function postExpenseClaimMarkPaid(
+  claimId: string,
+  payload: MarkExpensePaidPayload = {}
+): Promise<void> {
+  const enc = encodeURIComponent(claimId);
+  const body: Record<string, string> = {};
+  if (payload.paid_at?.trim()) body.paid_at = payload.paid_at.trim();
+  if (payload.payment_ref?.trim()) body.payment_ref = payload.payment_ref.trim();
+  if (payload.payment_account?.trim()) body.payment_account = payload.payment_account.trim();
+  if (payload.payment_mode) body.payment_mode = payload.payment_mode;
+
+  await payhubFetchJson<{ ok?: boolean }>(`/api/hr/v1/expenses/${enc}/mark-paid`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    ...HR_LIST_TIMEOUT,
+  });
 }

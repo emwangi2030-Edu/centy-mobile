@@ -71,8 +71,9 @@ export async function payhubFetchJson<T>(path: string, options: PayhubFetchOptio
     let message = text || res.statusText;
     let code: string | undefined;
     try {
-      const body = text ? (JSON.parse(text) as { message?: string; code?: string }) : {};
+      const body = text ? (JSON.parse(text) as { message?: string; error?: string; code?: string }) : {};
       if (typeof body.message === "string") message = body.message;
+      else if (typeof body.error === "string") message = body.error;
       if (typeof body.code === "string") code = body.code;
     } catch {
       /* keep message */

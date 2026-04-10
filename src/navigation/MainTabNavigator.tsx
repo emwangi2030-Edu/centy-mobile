@@ -1,54 +1,48 @@
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
-import { useHrCapabilities } from "../context/HrCapabilitiesContext";
-import AttendanceScreen from "../screens/AttendanceScreen";
-import HomeScreen from "../screens/HomeScreen";
-import LeaveScreen from "../screens/LeaveScreen";
-import MoreScreen from "../screens/MoreScreen";
-import PayslipsScreen from "../screens/PayslipsScreen";
-
-const Tab = createBottomTabNavigator();
-
-const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Home: "home-outline",
-  Payslips: "document-text-outline",
-  Leave: "calendar-outline",
-  Clock: "time-outline",
-  More: "ellipsis-horizontal",
-};
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import { useAppMode } from "../context/AppModeContext";
+import AdminTabNavigator from "./AdminTabNavigator";
+import EmployeeTabNavigator from "./EmployeeTabNavigator";
 
 export default function MainTabNavigator() {
-  const { data } = useHrCapabilities();
+  const { mode, ready } = useAppMode();
+  const { canSubmitOnBehalf, isImpersonating, isImpersonatingUser, impersonatedUserName } = useAuth();
 
-  const showPayslips = data.payroll.slips;
-  const showLeave = data.leaves.balances || data.leaves.applications;
-  const showClock =
-    data.attendance.timeLogs || data.attendance.checkins || data.attendance.shifts;
+  if (!ready) {
+    return (
+      <View style={styles.boot}>
+        <ActivityIndicator size="large" color="#00a865" />
+      </View>
+    );
+  }
+
+  const showBanner = isImpersonating || isImpersonatingUser;
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: true,
-        headerTitleStyle: { fontWeight: "700" },
-        tabBarActiveTintColor: "#00a865",
-        tabBarInactiveTintColor: "#8e8e93",
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={icons[route.name] ?? "ellipse-outline"} size={size} color={color} />
-        ),
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Home" }} />
-      {showPayslips ? (
-        <Tab.Screen name="Payslips" component={PayslipsScreen} options={{ title: "Payslips" }} />
+    <View style={styles.root}>
+      {showBanner ? (
+        <View style={styles.banner} accessibilityRole="alert">
+          <Text style={styles.bannerText}>
+            {isImpersonatingUser && impersonatedUserName
+              ? `You are signed in as ${impersonatedUserName}.`
+              : "Impersonation session — proceed with care."}
+          </Text>
+        </View>
       ) : null}
-      {showLeave ? (
-        <Tab.Screen name="Leave" component={LeaveScreen} options={{ title: "Leave" }} />
-      ) : null}
-      {showClock ? (
-        <Tab.Screen name="Clock" component={AttendanceScreen} options={{ title: "Attendance" }} />
-      ) : null}
-      <Tab.Screen name="More" component={MoreScreen} options={{ title: "More" }} />
-    </Tab.Navigator>
+      {canSubmitOnBehalf && mode === "admin" ? <AdminTabNavigator /> : <EmployeeTabNavigator />}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#f5f6f5" },
+  boot: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f6f5" },
+  banner: {
+    backgroundColor: "#fef3c7",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(180,83,9,0.25)",
+  },
+  bannerText: { fontSize: 13, fontWeight: "600", color: "#92400e", textAlign: "center" },
+});
